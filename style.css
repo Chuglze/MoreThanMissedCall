@@ -1,0 +1,200 @@
+:root {
+    --card-width: 280px;
+    --card-height: 420px;
+    --cursor-size: 20px;
+}
+
+body {
+    margin: 0;
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    background-color: #111;
+    color: #fff;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    cursor: none;
+}
+
+html, body, #game-container, .scene {
+    height: 100vh !important;
+    min-height: 100vh !important;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* --- 장면(Scene) 스타일 --- */
+.scene {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.scene.active {
+    display: flex;
+    opacity: 1;
+}
+
+.situation-text {
+    font-size: 1.8rem;
+    margin-bottom: 40px;
+    max-width: 800px;
+    line-height: 1.6;
+}
+
+.cards-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+}
+
+/* --- 시작 및 엔딩 장면 특별 스타일 --- */
+#scene-start {
+    background-color: #000;
+}
+
+#phone-image {
+    display: none;
+    width: 200px;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+}
+
+#phone-image.visible {
+    display: block;
+    opacity: 1;
+}
+
+#ending-title {
+    display: none;
+    width: 80%;
+    max-width: 600px;
+    opacity: 0;
+    transition: opacity 3s ease-in-out;
+}
+
+#ending-title.visible {
+    display: block;
+    opacity: 1;
+}
+
+/* --- 카드 스타일 및 3D 뒤집기 애니메이션 --- */
+.card-container {
+    width: var(--card-width);
+    height: var(--card-height);
+    perspective: 1000px; /* 3D 효과를 위한 원근감 */
+}
+
+.card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.card-container.hover .card {
+    transform: rotateY(180deg);
+}
+
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden; /* 뒷면은 보이지 않게 처리 */
+    border-radius: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 1.2rem;
+    line-height: 1.5;
+}
+
+.card-front {
+    background: linear-gradient(135deg, #4a4a4a, #2a2a2a);
+    border: 2px solid #666;
+}
+
+.card-back {
+    background: linear-gradient(135deg, #1a2a4a, #0a1a3a);
+    border: 2px solid #5a7a9a;
+    transform: rotateY(180deg);
+    font-style: italic;
+    color: #aaccff;
+}
+
+.card-container.clicked .card-front {
+    border-color: #ffcc00;
+    box-shadow: 0 0 15px #ffcc00;
+}
+
+/* --- MediaPipe 관련 스타일 --- */
+#output-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+    pointer-events: none; /* 캔버스가 마우스 이벤트를 가로채지 않도록 설정 */
+}
+
+#cursor {
+    position: fixed;
+    width: var(--cursor-size);
+    height: var(--cursor-size);
+    border-radius: 50%;
+    background-color: rgba(0, 255, 255, 0.7);
+    border: 2px solid white;
+    z-index: 1001;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+#cursor.pinch {
+    background-color: rgba(255, 100, 100, 0.9);
+    transform: translate(-50%, -50%) scale(0.8);
+} 
+
+#permission-message {
+    display: block !important;
+    z-index: 9999 !important;
+    position: relative !important;
+    background: #222 !important;
+    color: #fff !important;
+    padding: 40px !important;
+} 
+
+#mouse-cursor {
+    position: fixed;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.8);
+    border: 2px solid #00bcd4;
+    pointer-events: none;
+    z-index: 1500;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+} 
