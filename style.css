@@ -110,8 +110,8 @@ html, body, #game-container, .scene {
     transition: transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.card-container.hover .card {
-    transform: rotateY(180deg);
+.scene .card-container.hover .card {
+    transform: rotateY(180deg) !important;
 }
 
 .card-face {
@@ -146,6 +146,11 @@ html, body, #game-container, .scene {
 .card-container.clicked .card-front {
     border-color: #ffcc00;
     box-shadow: 0 0 15px #ffcc00;
+}
+
+.card-container.pinch-outline .card-front, .card-container.pinch-outline .card-back {
+    outline: 4px solid #00ff99;
+    box-shadow: 0 0 20px #00ff99;
 }
 
 /* --- MediaPipe 관련 스타일 --- */
@@ -197,4 +202,17 @@ html, body, #game-container, .scene {
     z-index: 1500;
     transform: translate(-50%, -50%);
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+} 
+
+#fade-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10000;
+    transition: opacity 1.5s;
+}
+#fade-overlay.active {
+    opacity: 1;
 } 
