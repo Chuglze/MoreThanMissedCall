@@ -1,92 +1,107 @@
 import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
 
-document.addEventListener('DOMContentLoaded', () => {
-    // DOM 요소 가져오기
+document.addEventListener('DOMContentLoaded', async () => {
+    // --- DOM 요소 가져오기 ---
     const video = document.getElementById("input-video");
     const canvasElement = document.getElementById("output-canvas");
     const canvasCtx = canvasElement.getContext("2d");
     const cursor = document.getElementById("cursor");
     const startButton = document.getElementById("start-button");
     const permissionMessage = document.getElementById("permission-message");
+    const fadeOverlay = document.getElementById('fade-overlay');
 
-    // 일반 마우스 커서용 DOM 생성 및 추가 (웹캠 미사용 시 대비)
-    const mouseCursor = document.createElement('div');
-    mouseCursor.id = 'mouse-cursor';
-    document.body.appendChild(mouseCursor);
-
-    // 마우스 움직임에 따라 일반 커서 위치 이동
-    window.addEventListener('mousemove', (e) => {
-        mouseCursor.style.left = `${e.clientX}px`;
-        mouseCursor.style.top = `${e.clientY}px`;
-    });
-
-    // 게임 상태 변수
-    let currentSceneId = 'scene-start';
+    // --- 게임 상태 변수 ---
     let handLandmarker;
-    let lastVideoTime = -1;
+    let currentSceneId = 'scene-start';
     let sceneState = {};
     let pinchWasActive = false;
+    let webcamRunning = false;
 
-    // 게임 시작 및 MediaPipe 초기화
-    async function initializeGame() {
-        console.log("initializeGame 실행됨");
-        // 1. 페이드 아웃(검정 오버레이 등장)
-        const fadeOverlay = document.getElementById('fade-overlay');
-        fadeOverlay.classList.add('active');
-        setTimeout(async () => {
-            // 2. scene-start 숨기기
-            const sceneStart = document.getElementById('scene-start');
-            if (sceneStart) sceneStart.classList.remove('active');
-            // 3. 기존 초기화 로직 실행
-            permissionMessage.style.display = 'none';
-            const filesetResolver = await FilesetResolver.forVisionTasks(
-                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
-            );
-            handLandmarker = await HandLandmarker.createFromOptions(filesetResolver, {
-                baseOptions: {
-                    modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
-                    delegate: "GPU"
-                },
-                runningMode: "VIDEO",
-                numHands: 1
+    // --- MediaPipe 초기화 ---
+    async function createHandLandmarker() {
+        const filesetResolver = await FilesetResolver.forVisionTasks(
+            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+        );
+        handLandmarker = await HandLandmarker.createFromOptions(filesetResolver, {
+            baseOptions: {
+                modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+                delegate: "GPU"
+            },
+            runningMode: "VIDEO",
+            numHands: 1
+        });
+        // 시작 버튼 활성화
+        startButton.disabled = false;
+        startButton.textContent = "게임 시작";
+    }
+    // 페이지 로드 시 바로 초기화 시작
+    startButton.disabled = true;
+    startButton.textContent = "모델 로딩 중...";
+    await createHandLandmarker();
+
+
+    // --- 웹캠 활성화 (수정됨) ---
+    async function enableWebcam() {
+        if (webcamRunning) return;
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+            video.srcObject = stream;
+            
+            // 'playing' 이벤트를 기다려서 비디오가 실제로 재생될 때 루프를 시작합니다.
+            video.addEventListener("playing", () => {
+                webcamRunning = true;
+                // 예측 루프를 여기서 시작합니다.
+                predictWebcam();
             });
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
-                video.srcObject = stream;
-                video.addEventListener("loadeddata", () => {
-                    console.log("video loadeddata 이벤트 발생");
-                    video.play().then(() => {
-                        console.log("video.play() 성공");
-                    }).catch(e => {
-                        console.error("video.play() 실패:", e);
-                    });
-                    predictWebcam();
-                    startIntro();
-                });
-            } catch (err) {
-                console.error("웹캠 접근에 실패했습니다:", err);
-                permissionMessage.innerHTML = "웹캠을 사용할 수 없습니다. <br> 카메라 권한을 확인하고 새로고침 해주세요.";
-                permissionMessage.style.display = 'block';
-            }
-            // 4. 페이드 인(검정 오버레이 사라짐)
-            setTimeout(() => {
-                fadeOverlay.classList.remove('active');
-            }, 1500);
-        }, 1500);
+
+            // 'loadeddata'가 발생하면 재생을 시도합니다.
+            video.addEventListener("loadeddata", () => {
+                video.play();
+            });
+
+        } catch (err) {
+            console.error("웹캠 접근에 실패했습니다:", err);
+            permissionMessage.innerHTML = "웹캠을 사용할 수 없습니다. <br> 카메라 권한을 확인하고 새로고침 해주세요.";
+        }
     }
 
-    // 시작 버튼에 클릭 이벤트 연결
-    startButton.addEventListener('click', initializeGame);
+    // --- 게임 시작 로직 ---
+    startButton.addEventListener('click', async () => {
+        fadeOverlay.classList.add('active');
+        await enableWebcam(); // 웹캠을 먼저 켜고
+        // 커서 표시
+        cursor.style.display = 'block';
+        setTimeout(() => {
+            document.getElementById('scene-start').style.display = 'none'; // 시작 화면 완전히 숨기기
+            // 튜토리얼 씬 보여주기
+            document.getElementById('scene-tutorial').classList.add('active');
+            currentSceneId = 'scene-tutorial'; // 튜토리얼 활성화
+            fadeOverlay.classList.remove('active');
+        }, 800);
+    });
 
-    // (수정됨) 안정성을 개선한 인트로 함수
+    // --- 튜토리얼 다음 버튼 ---
+    document.getElementById('tutorial-next-button').addEventListener('click', () => {
+        // 튜토리얼 씬 숨기고, 인트로 연출로 이동
+        document.getElementById('scene-tutorial').classList.remove('active');
+        currentSceneId = 'scene-start'; // 인트로 연출은 scene-start에서 진행
+        // 배경음악 재생 (이미 재생 중이 아니면)
+        const bgm = document.getElementById('bgm');
+        if (bgm && bgm.paused) {
+            bgm.currentTime = 0;
+            bgm.play().catch(() => {});
+        }
+        startIntro();
+    });
+
+    // --- 인트로 시퀀스 ---
     function startIntro() {
         const vibrationSound = document.getElementById('vibration-sound');
         const voicemailSound = document.getElementById('voicemail-sound');
         const phoneImage = document.getElementById('phone-image');
 
-        if (vibrationSound) {
-            vibrationSound.play().catch(e => console.error("진동 소리 재생 실패:", e));
-        }
+        vibrationSound?.play().catch(e => console.error("진동 소리 재생 실패:", e));
 
         setTimeout(() => {
             phoneImage.classList.add('visible');
@@ -95,131 +110,164 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (transitioned) return;
                 transitioned = true;
                 phoneImage.classList.remove('visible');
-                setTimeout(() => {
-                    switchScene('scene-1');
-                }, 1500);
+                setTimeout(() => switchScene('scene-1'), 1500);
             };
 
-            if (voicemailSound) {
-                voicemailSound.onended = goNext;
-                voicemailSound.play()
-                    .catch(error => {
-                        console.error("음성사서함 소리 재생 실패:", error);
-                        setTimeout(goNext, 3000);
-                    });
-                // 10초 후에도 onended가 안 되면 강제 전환
-                setTimeout(goNext, 10000);
-            } else {
-                // audio 태그가 없으면 3초 후 강제 전환
-                setTimeout(goNext, 3000);
-            }
+            voicemailSound.onended = goNext;
+            voicemailSound.play().catch(() => setTimeout(goNext, 3000));
         }, 5000);
     }
 
-    // 장면 전환 함수
+    // --- 장면 전환 ---
     function switchScene(sceneId) {
-        const fadeOverlay = document.getElementById('fade-overlay');
-        // 1. 페이드 아웃(검정 오버레이 등장)
         fadeOverlay.classList.add('active');
-        setTimeout(() => {
-            // 2. 실제 씬 전환
-            const currentScene = document.getElementById(currentSceneId);
+
+        // transitionend 핸들러 정의
+        function onFadeInEnd(e) {
+            if (e.propertyName !== 'opacity') return;
+            fadeOverlay.removeEventListener('transitionend', onFadeInEnd);
+
+            // 오버레이가 완전히 검게 된 후 씬 전환
+            document.getElementById(currentSceneId)?.classList.remove('active');
             const nextScene = document.getElementById(sceneId);
-            if (currentScene) currentScene.classList.remove('active');
             if (nextScene) {
                 nextScene.classList.add('active');
                 currentSceneId = sceneId;
-                sceneState[currentSceneId] = {
-                    clickedCards: new Set()
-                };
+                sceneState[currentSceneId] = { clickedCards: new Set() };
                 if (sceneId === 'scene-end') {
-                    const endingTitle = document.getElementById('ending-title');
-                    setTimeout(() => endingTitle.classList.add('visible'), 500);
+                    document.getElementById('ending-title')?.classList.add('visible');
                 }
             }
-            // 3. 페이드 인(검정 오버레이 사라짐)
-            setTimeout(() => {
-                fadeOverlay.classList.remove('active');
-            }, 1500);
-        }, 1500);
+
+            // 오버레이를 다시 사라지게(페이드인)
+            function onFadeOutEnd(e2) {
+                if (e2.propertyName !== 'opacity') return;
+                fadeOverlay.removeEventListener('transitionend', onFadeOutEnd);
+            }
+            fadeOverlay.addEventListener('transitionend', onFadeOutEnd);
+            fadeOverlay.classList.remove('active');
+        }
+        fadeOverlay.addEventListener('transitionend', onFadeInEnd);
     }
 
-    // 웹캠 프레임 예측 및 렌더링 루프
+    // --- 핵심 예측 루프 (수정됨) ---
+    let lastVideoTime = -1;
     function predictWebcam() {
-        // console.log("predictWebcam 루프"); // 너무 자주 찍히므로 주석 처리
+        // 루프의 시작에 requestAnimationFrame을 배치하여 중단되지 않도록 합니다.
+        window.requestAnimationFrame(predictWebcam);
+
+        // 웹캠이 실행 중이 아니거나 비디오가 준비되지 않았으면 아무것도 하지 않습니다.
+        if (!webcamRunning || video.paused || video.ended) {
+            return;
+        }
+
         canvasElement.width = window.innerWidth;
         canvasElement.height = window.innerHeight;
-        // console.log("video.currentTime:", video.currentTime, "lastVideoTime:", lastVideoTime); // 필요시만 사용
-        if (video.currentTime !== lastVideoTime) {
+
+        const startTimeMs = performance.now();
+        if (lastVideoTime !== video.currentTime) {
             lastVideoTime = video.currentTime;
-            console.log("detectForVideo 호출");
-            try {
-                const results = handLandmarker.detectForVideo(video, performance.now());
-                console.log("detectForVideo 반환값:", results);
-                if (results.landmarks && results.landmarks.length > 0) {
-                    console.log("손 인식됨!", results.landmarks[0]);
-                    const landmarks = results.landmarks[0];
-                    drawLandmarks(landmarks);
-                    handleHandTracking(landmarks);
-                } else {
-                    console.log("손 인식 안됨");
-                }
-            } catch (e) {
-                console.error("detectForVideo 호출 중 예외 발생:", e);
+            const results = handLandmarker.detectForVideo(video, startTimeMs);
+            
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            if (results.landmarks && results.landmarks.length > 0) {
+                const landmarks = results.landmarks[0];
+                //drawLandmarks(landmarks); // 디버깅을 위해 랜드마크 그리기
+                handleHandTracking(landmarks);
             }
         }
-        requestAnimationFrame(predictWebcam);
     }
 
-    // 손가락 마디 그리기 (디버깅용)
+    // --- 랜드마크 그리기 (디버깅용) ---
     function drawLandmarks(landmarks) {
-        // 아무것도 그리지 않음 (조인트 완전 비활성화)
+        for (const landmark of landmarks) {
+            canvasCtx.beginPath();
+            canvasCtx.arc(
+                (1 - landmark.x) * canvasElement.width, // 거울 모드
+                landmark.y * canvasElement.height,
+                5, 0, 2 * Math.PI
+            );
+            canvasCtx.fillStyle = "rgba(0, 255, 150, 0.7)";
+            canvasCtx.fill();
+        }
     }
 
-    // 손 추적 및 인터랙션 처리
+    // --- 손 추적 및 인터랙션 처리 ---
     function handleHandTracking(landmarks) {
-        // 검지 끝(INDEX_FINGER_TIP, landmark 8) 좌표
         const indexFingerTip = landmarks[8];
-        const cursorX = (1 - indexFingerTip.x) * window.innerWidth; // x좌표 반전
+        const thumbTip = landmarks[4];
+        
+        const cursorX = (1 - indexFingerTip.x) * window.innerWidth;
         const cursorY = indexFingerTip.y * window.innerHeight;
 
-        // 커서 위치 업데이트
         cursor.style.left = `${cursorX}px`;
         cursor.style.top = `${cursorY}px`;
 
-        // 커서 원의 반지름 (CSS에서 가져옴)
-        const cursorRadius = parseFloat(getComputedStyle(cursor).width) / 2;
-
-        // 호버(Hover) 감지 (커서 원 중심이 카드와 겹치면 호버)
-        const cards = document.querySelectorAll(`#${currentSceneId} .card-container`);
-        let hoveredCard = null;
-        cards.forEach(card => {
-            const rect = card.getBoundingClientRect();
-            // 카드 영역과 커서 원 중심이 겹치는지 판정
-            const closestX = Math.max(rect.left, Math.min(cursorX, rect.right));
-            const closestY = Math.max(rect.top, Math.min(cursorY, rect.bottom));
-            const dist = Math.hypot(cursorX - closestX, cursorY - closestY);
-            if (dist < cursorRadius) {
-                hoveredCard = card;
-            }
-            card.classList.remove('hover', 'pinch-outline');
-        });
-
-        // 핀치(Pinch) 감지
-        const thumbTip = landmarks[4];
         const distance = Math.hypot(indexFingerTip.x - thumbTip.x, indexFingerTip.y - thumbTip.y);
-        const isPinching = distance < 0.04; // 핀치 감지 임계값
+        const isPinching = distance < 0.04;
+
         cursor.classList.toggle('pinch', isPinching);
 
-        // 핀치 상태(뒷면)일 때만 아웃라인 효과 적용
-        if (hoveredCard) {
-            if (isPinching) {
-                hoveredCard.classList.add('pinch-outline');
+        // 시작 화면: 게임 시작 버튼 핀치 지원
+        if (currentSceneId === 'scene-start') {
+            const btn = document.getElementById('start-button');
+            const rect = btn.getBoundingClientRect();
+            const isHover = (cursorX > rect.left && cursorX < rect.right && cursorY > rect.top && cursorY < rect.bottom);
+            btn.classList.toggle('hover', isHover);
+            if (isPinching && !pinchWasActive && isHover) {
+                btn.click();
             }
-            hoveredCard.classList.add('hover');
+            pinchWasActive = isPinching;
+            return;
         }
 
-        // 핀치 동작이 시작되는 순간(클릭)
+        // 튜토리얼 씬: 버튼 핀치 지원
+        if (currentSceneId === 'scene-tutorial') {
+            const btn = document.getElementById('tutorial-next-button');
+            const rect = btn.getBoundingClientRect();
+            const isHover = (cursorX > rect.left && cursorX < rect.right && cursorY > rect.top && cursorY < rect.bottom);
+            btn.classList.toggle('hover', isHover);
+            if (isPinching && !pinchWasActive && isHover) {
+                btn.click();
+            }
+            pinchWasActive = isPinching;
+            return;
+        }
+
+        // summary 씬: 버튼 핀치 지원
+        if (currentSceneId === 'scene-summary') {
+            const btn = document.getElementById('summary-next-button');
+            const rect = btn.getBoundingClientRect();
+            const isHover = (cursorX > rect.left && cursorX < rect.right && cursorY > rect.top && cursorY < rect.bottom);
+            btn.classList.toggle('hover', isHover);
+            if (isPinching && !pinchWasActive && isHover) {
+                btn.click();
+            }
+            pinchWasActive = isPinching;
+            return;
+        }
+
+        const cards = document.querySelectorAll(`#${currentSceneId} .card-container`);
+        let hoveredCard = null;
+
+        // 1. 어떤 카드가 호버되었는지 먼저 찾는다.
+        for (const card of cards) {
+            const rect = card.getBoundingClientRect();
+            if (cursorX > rect.left && cursorX < rect.right && cursorY > rect.top && cursorY < rect.bottom) {
+                hoveredCard = card;
+                break; // 하나 찾으면 더 이상 찾을 필요 없음
+            }
+        }
+
+        // 2. 찾은 결과를 바탕으로 모든 카드에 클래스를 적용/제거한다.
+        cards.forEach(card => {
+            const isCurrentlyHovered = (card === hoveredCard);
+            card.classList.toggle('hover', isCurrentlyHovered);
+            card.classList.toggle('pinch-outline', isCurrentlyHovered && isPinching);
+        });
+
+
+        // 3. 핀치 동작이 "시작되는 순간"에만 클릭을 처리한다.
         if (isPinching && !pinchWasActive) {
             if (hoveredCard) {
                 handleCardClick(hoveredCard);
@@ -228,31 +276,36 @@ document.addEventListener('DOMContentLoaded', () => {
         pinchWasActive = isPinching;
     }
 
-    // 카드 클릭(핀치) 이벤트 처리
+    // --- 카드 클릭 처리 ---
     function handleCardClick(card) {
         const sceneConfig = {
             'scene-1': { nextScene: 'scene-2', requiredClicks: 1, check: (c) => c.dataset.correct === 'true' },
             'scene-2': { nextScene: 'scene-3', requiredClicks: 3 },
             'scene-3': { nextScene: 'scene-4', requiredClicks: 3 },
-            'scene-4': { nextScene: 'scene-end', requiredClicks: 3 },
+            'scene-4': { nextScene: 'scene-summary', requiredClicks: 3 },
         };
         const config = sceneConfig[currentSceneId];
         if (!config) return;
 
         const state = sceneState[currentSceneId];
-        if (!state.clickedCards.has(card.id)) {
+        if (state && !state.clickedCards.has(card.id)) {
             card.classList.add('clicked');
             state.clickedCards.add(card.id);
         }
 
-        if (config.check) { // 특정 카드만 클릭해야 하는 경우 (scene-1)
-            if (config.check(card)) {
-                setTimeout(() => switchScene(config.nextScene), 800);
-            }
-        } else { // 모든 카드를 클릭해야 하는 경우
-            if (state.clickedCards.size === config.requiredClicks) {
-                setTimeout(() => switchScene(config.nextScene), 800);
+        if (config.check) {
+            if (config.check(card)) switchScene(config.nextScene);
+        } else {
+            if (state.clickedCards.size >= config.requiredClicks) {
+                switchScene(config.nextScene);
             }
         }
     }
+
+    // --- summary-next-button: 엔딩으로 이동 ---
+    document.getElementById('summary-next-button').addEventListener('click', () => {
+        document.getElementById('scene-summary').classList.remove('active');
+        currentSceneId = 'scene-end';
+        switchScene('scene-end');
+    });
 });

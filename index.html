@@ -19,7 +19,7 @@
         <div id="scene-start" class="scene active">
             <!-- 사용자에게 웹캠 권한을 요청하는 메시지 -->
             <div id="permission-message">
-                <h2>'More Than Missed Calls'</h2>
+                <!--<h2>'More Than Missed Calls'</h2>-->
                 <p>이 게임은 웹캠을 사용하여 진행됩니다.<br>카메라 접근을 허용해주세요.</p>
                 <button id="start-button" style="padding: 10px 20px; font-size: 1rem;">게임 시작</button>
             </div>
@@ -27,19 +27,30 @@
             <img id="phone-image" src="assets/images/phone-image.jpg" alt="휴대전화 이미지">
         </div>
 
+        <!-- 장면 튜토리얼: 인터랙션 방법 안내 -->
+        <div id="scene-tutorial" class="scene">
+            <div class="situation-text">
+                <b>조작 방법 안내</b><br><br>
+                화면의 <span style="color:#00ffff;">파란색 원 커서</span>는 <b>한 손의 검지 끝</b>을 따라 움직입니다.<br>
+                <b>선택(클릭)</b>은 <b>검지와 엄지</b>를 맞닿게(핀치) 하면 됩니다.<br><br>
+                <span style="font-size:1.1rem; color:#aaa;">※ 손가락이 잘 인식되지 않으면 밝은 곳에서 손바닥을 카메라에 잘 보이게 해주세요.</span>
+            </div>
+            <button id="tutorial-next-button" style="padding: 12px 32px; font-size: 1.1rem; margin-top: 32px;">다음</button>
+        </div>
+
         <!-- 장면 1 -->
         <div id="scene-1" class="scene">
-            <p class="situation-text">부재 중 전화가 와있다. 이때 D의 생각은?</p>
+            <p class="situation-text">부재 중 전화가 와있다.<br>이때 D의 생각은?</p>
             <div class="cards-wrapper">
                 <div class="card-container" id="card-1-1" data-correct="true">
                     <div class="card">
-                        <div class="card-face card-front">급한 건이면 문자 남겼겠지. AI로 웹 만들기 너무 재밌네.</div>
+                        <div class="card-face card-front">급한 건이면 문자 남겼겠지. <br>AI로 웹 만들기 너무 재밌네.</div>
                         <div class="card-face card-back">콜백을 원하면 문자를 남겼을 거라 생각했다.</div>
                     </div>
                 </div>
                 <div class="card-container" id="card-1-2">
                     <div class="card">
-                        <div class="card-face card-front">바쁘고 급한데 왠 전화 (알람을 지우고 새까맣게 잊는다)</div>
+                        <div class="card-face card-front">바쁘고 급한데 왠 전화 <br>(알람을 지우고 새까맣게 잊는다)</div>
                         <div class="card-face card-back">이런 생각은 하지 않았다.</div>
                     </div>
                 </div>
@@ -54,23 +65,23 @@
 
         <!-- 장면 2 -->
         <div id="scene-2" class="scene">
-            <p class="situation-text">수업 끝나고 집에 돌아가는 길에 걸려온 전화를 받는다. 이때 D의 생각은?</p>
+            <p class="situation-text">수업 끝나고 집에 돌아가는 길에 걸려온 전화를 받는다. <br>이때 D의 생각은?</p>
             <div class="cards-wrapper">
                 <div class="card-container" id="card-2-1">
                     <div class="card">
-                        <div class="card-face card-front">(전화를 귀에 바짝 붙이며) 잘 안 들려... 머리 아파... 이런 얘기, 아까 얼굴 보고 하지.</div>
+                        <div class="card-face card-front">(전화를 귀에 바짝 붙이며)<br>잘 안 들려... 머리 아파... <br>이런 얘기, 아까 얼굴 보고 하지.</div>
                         <div class="card-face card-back">이런 생각은 진짜 했다.</div>
                     </div>
                 </div>
                 <div class="card-container" id="card-2-2">
                     <div class="card">
-                        <div class="card-face card-front">그래도 대면하지 않았을 때 이루어지는 대화도 있지.</div>
-                        <div class="card-face card-back">이런 생각은 진짜 했다.</div>
+                        <div class="card-face card-front">그래도 대면하지 않았을 때 <br>이루어지는 대화도 있지.</div>
+                        <div class="card-face card-back">이런 생각도 진짜 했다.</div>
                     </div>
                 </div>
                 <div class="card-container" id="card-2-3">
                     <div class="card">
-                        <div class="card-face card-front">회피 충동 10%, 오죽하면 전화했을까 50%, 스스로의 행동을 돌아보자 40%</div>
+                        <div class="card-face card-front">회피 충동 10%, <br>오죽하면 전화했을까 50%, <br>스스로의 행동을 돌아보자 40%</div>
                         <div class="card-face card-back">이런 마음이었다.</div>
                     </div>
                 </div>
@@ -79,24 +90,24 @@
 
         <!-- 장면 3 -->
         <div id="scene-3" class="scene">
-            <p class="situation-text">시간이 흘러... 이번에는 아코랩 담당자한테서 부재 중 전화가 와있다. 이때 D의 생각은?</p>
+            <p class="situation-text">시간이 흘러... <br>이번에는 아코랩 담당자한테서 부재 중 전화가 와있다.<br>이때 D의 생각은?</p>
             <div class="cards-wrapper">
                 <div class="card-container" id="card-3-1">
                     <div class="card">
-                        <div class="card-face card-front">무슨 일이지? 교부 신청서에 문제가 있나? (당장 전화를 건다.)</div>
-                        <div class="card-face card-back">이런 생각은 진짜 했다.</div>
+                        <div class="card-face card-front">무슨 일이지? <br>교부 신청서에 문제가 있나? <br>(당장 전화를 건다.)</div>
+                        <div class="card-face card-back">실제로 이랬다.</div>
                     </div>
                 </div>
                 <div class="card-container" id="card-3-2">
                     <div class="card">
-                        <div class="card-face card-front">왜 전화했지? 보통 급한 용건일 때만 전화하던데 (당장 전화를 건다.)</div>
-                        <div class="card-face card-back">이런 생각은 진짜 했다.</div>
+                        <div class="card-face card-front">왜 전화했지? 보통 급한 용건일 때만 전화하던데<br>(당장 전화를 건다.)</div>
+                        <div class="card-face card-back">실제로 이랬다.</div>
                     </div>
                 </div>
                  <div class="card-container" id="card-3-3">
                     <div class="card">
-                        <div class="card-face card-front">헉, 추합자 기강 잡는 건가? (목소리를 한 톤 올리며 당장 전화를 건다.)</div>
-                        <div class="card-face card-back">이런 생각은 하지 않았다.</div>
+                        <div class="card-face card-front">헉, 추합자 기강 잡는 건가? <br>(목소리를 한 톤 올리며 당장 전화를 건다.)</div>
+                        <div class="card-face card-back">이러지는 않았다.</div>
                     </div>
                 </div>
             </div>
@@ -104,7 +115,7 @@
         
         <!-- 장면 4 -->
         <div id="scene-4" class="scene">
-            <p class="situation-text">같은 전화, 다른 반응. D는 비에 흠뻑 젖어 불편해진 신발을 벗지도 못한 채 스타벅스에 앉아 다음과 같이 생각한다.</p>
+            <p class="situation-text">같은 전화, 다른 반응. <br>D는 비에 흠뻑 젖어 불편해진 신발을 벗지도 못한 채 <br>스타벅스에 앉아 다음과 같이 생각한다.</p>
             <div class="cards-wrapper">
                 <div class="card-container" id="card-4-1">
                     <div class="card">
@@ -115,7 +126,7 @@
                 <div class="card-container" id="card-4-2">
                     <div class="card">
                         <div class="card-face card-front">무슨 일이냐고 먼저 물어보는 게 어려운 일은 아니지.</div>
-                        <div class="card-face card-back">내가 무심했다. 문자를 남기는 게 어려운 일은 아니니까.</div>
+                        <div class="card-face card-back">내가 무심했다. <br>문자를 남기는 게 어려운 일은 아니니까.</div>
                     </div>
                 </div>
                  <div class="card-container" id="card-4-3">
@@ -127,7 +138,16 @@
             </div>
         </div>
 
-        <!-- 장면 5: 엔딩 -->
+        <!-- 장면 5: 엔딩 전 정리 -->
+        <div id="scene-summary" class="scene">
+            <div class="situation-text">
+                준비된 상황이 모두 끝났다.<br>
+                D는 일련의 상황을 다음과 같이 정리하는 것으로 생각을 마무리했다.
+            </div>
+            <button id="summary-next-button" style="padding: 12px 32px; font-size: 1.1rem; margin-top: 32px;">어떻게 정리했을까?</button>
+        </div>
+
+        <!-- 장면 6: 엔딩 -->
         <div id="scene-end" class="scene">
             <img id="ending-title" src="assets/images/title-image.png" alt="More Than Missed Calls 타이틀 이미지">
         </div>
@@ -136,6 +156,7 @@
     <!-- 오디오 파일 플레이스홀더 -->
     <audio id="vibration-sound" src="assets/sounds/vibration-sound.mp3"></audio>
     <audio id="voicemail-sound" src="assets/sounds/voicemail-sound.mp3"></audio>
+    <audio id="bgm" src="assets/sounds/bgm.mp3" loop></audio>
 
     <script type="module" src="main.js"></script>
     <div id="fade-overlay"></div>
